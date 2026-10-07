@@ -1,0 +1,10 @@
+{
+  "version": "0.2.0", "configurations": [
+    {"name":"Libros","type":"debugpy","request":"launch","module":"uvicorn","args":["libros:app","--port","8001"],"console":"integratedTerminal"},
+    {"name":"Usuarios","type":"debugpy","request":"launch","module":"uvicorn","args":["usuarios:app","--port","8002"],"console":"integratedTerminal"},
+    {"name":"Préstamos","type":"debugpy","request":"launch","module":"uvicorn","args":["prestamos:app","--port","8003"],"console":"integratedTerminal"},
+    {"name":"Notificaciones","type":"debugpy","request":"launch","module":"uvicorn","args":["notificaciones:app","--port","8004"],"console":"integratedTerminal"},
+    {"name":"Multas","type":"debugpy","request":"launch","module":"uvicorn","args":["multas:app","--port","8005"],"console":"integratedTerminal"},
+    {"name":"Reseñas","type":"debugpy","request":"launch","module":"uvicorn","args":["resenas:app","--port","8006"],"console":"integratedTerminal"}
+  ], "compounds": [{"name":"Biblioteca SOA - Todos los servicios","configurations":["Libros","Usuarios","Préstamos","Notificaciones","Multas","Reseñas"],"stopAll":true}]
+}
