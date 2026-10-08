@@ -10,8 +10,8 @@ URL_NOTIFICACIONES = "http://127.0.0.1:8004"
 URL_MULTAS = "http://127.0.0.1:8005"
 
 class PrestamoCreate(BaseModel):
-    usuario_id: int = Field(..., description="ID del usuario", json_schema_extra={"example": 1})
-    libro_id: int = Field(..., description="ID del libro", json_schema_extra={"example": 1})
+    usuario_id: int = Field(..., description="ID del usuario que solicita el préstamo", json_schema_extra={"example": 1})
+    libro_id: int = Field(..., description="ID del libro a prestar", json_schema_extra={"example": 1})
 
 def get_db():
     conn = sqlite3.connect("prestamos.db")
@@ -24,13 +24,18 @@ async def lifespan(app: FastAPI):
         conn.execute("CREATE TABLE IF NOT EXISTS prestamos (id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id INTEGER, libro_id INTEGER, activo BOOLEAN DEFAULT 1)")
     yield
 
-app = FastAPI(title="Servicio de Préstamos (Orquestador)", lifespan=lifespan)
+app = FastAPI(
+    title="Servicio de Préstamos (Orquestador)", 
+    description="Valida reglas cruzadas y orquesta el flujo completo de préstamos y devoluciones",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 async def enviar_notificacion_async(email: str, mensaje: str):
     async with httpx.AsyncClient() as client:
-        await client.post(f"{URL_NOTIFICACIONES}/notificaciones/enviar", json={"destinatario": email, "asunto": "Préstamo", "mensaje": mensaje})
+        await client.post(f"{URL_NOTIFICACIONES}/notificaciones/enviar", json={"destinatario": email, "asunto": "Préstamo Biblioteca", "mensaje": mensaje})
 
-@app.post("/prestamos", status_code=status.HTTP_201_CREATED)
+@app.post("/prestamos", status_code=status.HTTP_201_CREATED, tags=["Orquestador de Préstamos"], summary="Ejecuta el algoritmo de orquestación de préstamos", description="Valida usuario, adeudos, cuotas y disponibilidad en un flujo secuencial, luego delega la notificación asíncrona.")
 async def crear_prestamo(payload: PrestamoCreate, bg_tasks: BackgroundTasks):
     async with httpx.AsyncClient() as client:
         # Paso 2: Validar Usuario
@@ -65,11 +70,11 @@ async def crear_prestamo(payload: PrestamoCreate, bg_tasks: BackgroundTasks):
         p_id = cursor.lastrowid
 
     # Paso 8: Notificación Asíncrona (Non-blocking)
-    bg_tasks.add_task(enviar_notificacion_async, usuario_email, f"Se prestó el libro {payload.libro_id}")
+    bg_tasks.add_task(enviar_notificacion_async, usuario_email, f"Se te ha prestado exitosamente el libro con ID {payload.libro_id}")
 
     return {"id": p_id, "status": "Prestamo exitoso"}
 
-@app.patch("/prestamos/{id}/devolver", status_code=status.HTTP_200_OK)
+@app.patch("/prestamos/{id}/devolver", status_code=status.HTTP_200_OK, tags=["Orquestador de Préstamos"], summary="Registra la devolución de un libro", description="Marca el préstamo como inactivo y libera el libro en el inventario.")
 async def devolver(id: int):
     with get_db() as conn:
         row = conn.execute("SELECT * FROM prestamos WHERE id = ?", (id,)).fetchone()
