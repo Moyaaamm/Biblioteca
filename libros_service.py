@@ -42,7 +42,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# --- Endpoints Documentados ---
 
 @app.post("/libros", status_code=status.HTTP_201_CREATED, tags=["Catálogo"], summary="Registra un nuevo libro")
 def crear_libro(libro: LibroCreate):

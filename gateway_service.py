@@ -20,7 +20,6 @@ async def gateway_proxy(service: str, path: str, request: Request):
     url = f"{SERVICES[service]}/{path}"
     body = await request.body()
     
-    # Filtrar encabezados problemáticos en el proxy
     headers = dict(request.headers)
     headers.pop("host", None)
     
@@ -35,7 +34,6 @@ async def gateway_proxy(service: str, path: str, request: Request):
             )
             return Response(content=res.content, status_code=res.status_code, headers=dict(res.headers))
         except httpx.RequestError:
-            # Manejo de error 503 requerido por rúbrica
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE, 
                 detail="Falla de comunicación inter-servicio en el Gateway"
